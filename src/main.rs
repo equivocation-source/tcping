@@ -44,12 +44,14 @@ impl ResultCollection {
     }
 
     fn get_std_dev(&self) -> f64 {
-        if self.successes == 0 {
-            0.0
-        } else {
-            let avg = self.millis_added / (self.successes as f64);
-            let variance = (self.millis_squared + (self.successes as f64 * avg * avg) - (2.0 * self.millis_added * avg)) / (self.successes as f64);
-            variance.sqrt()
+        match self.successes {
+            0 => 0.0,
+            _ => {
+                let samples = self.successes as f64;
+                let avg = self.millis_added / samples;
+                let variance = (self.millis_squared + (samples * avg * avg) - (2.0 * self.millis_added * avg)) / (samples);
+                variance.sqrt()
+            },
         }
     }
 
