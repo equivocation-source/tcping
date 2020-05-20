@@ -132,7 +132,7 @@ impl ProgParameters {
         };
 
         if interval_count < 1 {
-            return Err("Interals must be higher than 0");
+            return Err("Need at least 1 Interval");
         }
 
         let wait_interval = match option_map.get(&CmdLineOpts::Wait) {
