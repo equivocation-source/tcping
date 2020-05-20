@@ -72,8 +72,8 @@ struct ProgParameters {
     target_host: String,
     target_port: String,
     interval_count: u32,
-    connection_timeout: u8,
-    wait_interval: u64,
+    connection_timeout: std::time::Duration,
+    wait_interval: std::time::Duration,
     bare_socket: SocketAddr,
 }
 
@@ -138,20 +138,20 @@ impl ProgParameters {
         let wait_interval = match option_map.get(&CmdLineOpts::Wait) {
             Some(val) => {
                 match val.parse::<u64>() {
-                    Ok(wait) => if wait < 1 { 1 } else { wait },
+                    Ok(wait) => if wait < 1 { std::time::Duration::from_secs(1) } else { std::time::Duration::from_secs(wait) },
                     Err(_) => return Err("Invalid Wait"),
                 }
             }
-            None => 1,
+            None => std::time::Duration::from_secs(1),
         };
         let connection_timeout = match option_map.get(&CmdLineOpts::TimeOut) {
             Some(val) => {
-                match val.parse::<u8>() {
-                    Ok(timeout) => timeout,
+                match val.parse::<u64>() {
+                    Ok(timeout) => if timeout < 1 { std::time::Duration::from_secs(1) } else { std::time::Duration::from_secs(timeout) },
                     Err(_) => return Err("Invalid Timeout"),
                 }
             }
-            None => 5,
+            None => std::time::Duration::from_secs(5),
         };
 
         let target_host = match option_map.get(&CmdLineOpts::HostName) {
@@ -190,7 +190,7 @@ impl ProgParameters {
 fn run_connection_tests(result_col: &mut ResultCollection, prog_params: &ProgParameters) {
     while result_col.iterations < prog_params.interval_count {
         let now = Instant::now();
-        match TcpStream::connect(prog_params.bare_socket) {
+        match TcpStream::connect_timeout(&prog_params.bare_socket, prog_params.connection_timeout) {
             Ok(stream) => {
                 let millis = (now.elapsed().as_micros() as f64) / 1000.0; //millis as a fraction
                 println!("Connected {}:{} - {:.3}ms", prog_params.target_host, prog_params.target_port, millis);
@@ -202,7 +202,7 @@ fn run_connection_tests(result_col: &mut ResultCollection, prog_params: &ProgPar
                 result_col.add_interval(false, 0.0);
             },
         }
-        thread::sleep(std::time::Duration::from_secs(prog_params.wait_interval));
+        thread::sleep(prog_params.wait_interval);
     }
 }
 
