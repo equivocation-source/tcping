@@ -188,7 +188,7 @@ impl ProgParameters {
 }
 
 fn run_connection_tests(result_col: &mut ResultCollection, prog_params: &ProgParameters) {
-    while result_col.iterations < prog_params.interval_count {
+    loop {
         let now = Instant::now();
         match TcpStream::connect_timeout(&prog_params.bare_socket, prog_params.connection_timeout) {
             Ok(stream) => {
@@ -202,7 +202,11 @@ fn run_connection_tests(result_col: &mut ResultCollection, prog_params: &ProgPar
                 result_col.add_interval(false, 0.0);
             },
         }
-        thread::sleep(prog_params.wait_interval);
+        if result_col.iterations == prog_params.interval_count {
+            break;
+        } else {
+            thread::sleep(prog_params.wait_interval);
+        }
     }
 }
 
